@@ -32,6 +32,11 @@ It can list all the devices with their addresses. It also shows all the GATT ser
 
 uint16_t led_count, system_count;
 
+//Characteristics UUID
+uint8_t environment_char_uuid_i[16] = {0x66,0x9a,0x0c,0x20,0x00,0x08,0x84,0xbf,0xec,0x11,0x0d,0xbb,0x20,0xb2,0x5f,0x49};
+uint8_t acceleration_char_uuid_i[16] = {0x66,0x9a,0x0c,0x20,0x00,0x08,0x84,0xbf,0xec,0x11,0x0d,0xbb,0x22,0xb2,0x5f,0x49};
+uint8_t gyroscope_char_uuid_i[16] = {0x66,0x9a,0x0c,0x20,0x00,0x08,0x84,0xbf,0xec,0x11,0x0d,0xbb,0x23,0xb2,0x5f,0x49};
+
 //Sensor variables: pressure, temperature, humidity
 uint8_t raw_pressure[3];
 int16_t temperature = 0;
@@ -96,14 +101,17 @@ int main(void) {
 	uint8_t string_service_uuid[16] = {0x1b,0xc5,0xd5,0xa5,0x02,0xb4,0x9a,0xe1,0xe1,0x11,0x01,0x00,0x00,0x00,0x00,0x00};
 	Service_UUID_t service_uuid;
 	Osal_MemCpy(&service_uuid.Service_UUID_128, string_service_uuid, 16);
-	aci_gatt_add_service(UUID_TYPE_128, &service_uuid, PRIMARY_SERVICE, 6, &ServiceHandle);
+	aci_gatt_add_service(UUID_TYPE_128, &service_uuid, PRIMARY_SERVICE, 8, &ServiceHandle);
 	
-	/*Characteristic definition: defined as service*/
-	static uint16_t CharHandle;
-	uint8_t string_char_uuid[16] = {0x1b,0xc5,0xd5,0xa5,0x02,0x00,0x36,0xac,0xe1,0x11,0x01,0x00,0x00,0x00,0xE0,0x00};
-	Char_UUID_t char_uuid;
-	Osal_MemCpy(&char_uuid.Char_UUID_128, string_char_uuid, 16);
-	aci_gatt_add_char(ServiceHandle, UUID_TYPE_128, &char_uuid, 25, CHAR_PROP_READ, ATTR_PERMISSION_NONE, GATT_DONT_NOTIFY_EVENTS, 16, 0, &CharHandle);
+	/*Characteristic(s) definition*/
+	static uint16_t EnvironCharHandle, AccelCharHandle, GyroCharHandle;
+	Char_UUID_t environment_char_uuid, accel_char_uuid, gyro_char_uuid;
+	Osal_MemCpy(&environment_char_uuid.Char_UUID_128, environment_char_uuid_i, 16);
+	Osal_MemCpy(&accel_char_uuid.Char_UUID_128, acceleration_char_uuid_i, 16);
+	Osal_MemCpy(&gyro_char_uuid.Char_UUID_128, gyroscope_char_uuid_i, 16);
+	aci_gatt_add_char(ServiceHandle, UUID_TYPE_128, &environment_char_uuid, 8, CHAR_PROP_READ, ATTR_PERMISSION_NONE, GATT_DONT_NOTIFY_EVENTS, 16, 0, &EnvironCharHandle);
+	aci_gatt_add_char(ServiceHandle, UUID_TYPE_128, &accel_char_uuid, 8, CHAR_PROP_READ, ATTR_PERMISSION_NONE, GATT_DONT_NOTIFY_EVENTS, 16, 0, &AccelCharHandle);
+	aci_gatt_add_char(ServiceHandle, UUID_TYPE_128, &gyro_char_uuid, 8, CHAR_PROP_READ, ATTR_PERMISSION_NONE, GATT_DONT_NOTIFY_EVENTS, 16, 0, &GyroCharHandle);
 
 	/* Set device connectable (advertising) */
 	/*Choose the name*/
@@ -120,47 +128,46 @@ int main(void) {
 		BTLE_StackTick();
 		
 		//Define a buffer that will contain the data to be written on the GATT characteristic
-		uint8_t output_buffer[25] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+		uint8_t output_buffer[8] = {0,0,0,0,0,0,0,0};
 		
-		//A random value is generated for the response MSB. Just to verify if notihing is stuck. 
-			
+		//A random value is generated for the response MSB. Just to verify that nothing is stuck. 
 		output_buffer[0] = rand();
-			
-		//Add a divider to the buffer (just for fun :D)
-		output_buffer[1] = 0xFF;	
 			
 		//Add Pressure (raw value from the sensor) to the buffer
 		lps22hh_pressure_raw_get(0, raw_pressure);
-		output_buffer[2] = raw_pressure[0];
-		output_buffer[3] = raw_pressure[1];
-		output_buffer[4] = raw_pressure[2];
-		
-		//Divider again
-		output_buffer[5] = 0xFF;
+		output_buffer[1] = raw_pressure[0];
+		output_buffer[2] = raw_pressure[1];
+		output_buffer[3] = raw_pressure[2];
 			
 		//Add Humidity and Temperature values to the buffer, correctly shifted 
 		HTS221_Get_Measurement(0, &humidity, &temperature);
-		output_buffer[6] = humidity;
-		output_buffer[7] = humidity >> 8;
-		output_buffer[8] = 0xFF;
-		output_buffer[9] = temperature;
-		output_buffer[10] = temperature >> 8;
-		output_buffer[11] = 0xFF;		
+		output_buffer[4] = humidity;
+		output_buffer[5] = humidity >> 8;
+		output_buffer[6] = temperature;
+		output_buffer[7] = temperature >> 8;
 		
-		//Add accelerometer and gyroscope values to the buffer
+		//Publish Humidity + Temperature values.
+		aci_gatt_update_char_value(ServiceHandle, EnvironCharHandle, 0, 8, output_buffer);
+		
+		//Add accelerometer and gyroscope values to the buffer and publish values
 		lsm6dso_acceleration_raw_get(0, data_raw_acceleration);
 		lsm6dso_angular_rate_raw_get(0, data_raw_angular_rate);
-	  for(int k=0; k<6; k++)
-			output_buffer[12 + k] = data_raw_acceleration[k];
-		output_buffer[18] = 0xFF;
+	  
 		for(int k=0; k<6; k++)
-			output_buffer[19 + k] = data_raw_angular_rate[k];
+			output_buffer[k] = data_raw_angular_rate[k];
+		output_buffer[6] = 0;
+		output_buffer[7] = 0;
+		aci_gatt_update_char_value(ServiceHandle, GyroCharHandle, 0, 8, output_buffer);
 		
-		//Publish the buffer	
-		aci_gatt_update_char_value(ServiceHandle, CharHandle, 0, 19, output_buffer);
+		for(int k=0; k<6; k++)
+			output_buffer[k] = data_raw_acceleration[k];
+		output_buffer[6] = 0;
+		output_buffer[7] = 0;
+		aci_gatt_update_char_value(ServiceHandle, AccelCharHandle, 0, 8, output_buffer);
 		
 	}
 }
+
 
 /* ***************** BlueNRG-1 Stack Callbacks ********************************/
 
