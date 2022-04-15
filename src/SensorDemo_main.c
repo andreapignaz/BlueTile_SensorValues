@@ -36,16 +36,22 @@ It is a nice GUI that helps you generate the Bluetooth stack configuration heade
 uint16_t led_count, system_count;
 uint8_t time_count;
 
-//GATT handles and commoduìity variables
+//GATT handles and commodity variables
 static uint16_t ServiceHandle;
-static uint16_t EnvironCharHandle, AccelCharHandle, GyroCharHandle;
+static uint16_t EnvCharHandle, AngularCharHandle, AccelerationCharHandle;
 uint8_t connection_established;
-uint8_t output_buffer[8] = {0,0,0,0,0,0,0,0};
+uint8_t environment_buffer[176];
+uint8_t angular_buffer[151];
+uint8_t acceleration_buffer[151];
+
+uint8_t char_index;
 
 //Characteristics UUID
-uint8_t environment_char_uuid_i[16] = {0x66,0x9a,0x0c,0x20,0x00,0x08,0x84,0xbf,0xec,0x11,0x0d,0xbb,0x20,0xb2,0x5f,0x49};
-uint8_t acceleration_char_uuid_i[16] = {0x66,0x9a,0x0c,0x20,0x00,0x08,0x84,0xbf,0xec,0x11,0x0d,0xbb,0x22,0xb2,0x5f,0x49};
-uint8_t gyroscope_char_uuid_i[16] = {0x66,0x9a,0x0c,0x20,0x00,0x08,0x84,0xbf,0xec,0x11,0x0d,0xbb,0x23,0xb2,0x5f,0x49};
+uint8_t string_service_uuid[16] =      {0x66,0x9a,0x0c,0x20,0x00,0x08,0x84,0xbf,0xec,0x11,0xb9,0xbc,0xa0,0x5c,0x2a,0x0b};
+
+uint8_t environment_char_uuid_i[16] =     {0x66,0x9a,0x0c,0x20,0x00,0x08,0x84,0xbf,0xec,0x11,0xb9,0xbc,0xa1,0x5c,0x2a,0x0b};
+uint8_t angular_char_uuid_i[16] =      {0x66,0x9a,0x0c,0x20,0x00,0x08,0x84,0xbf,0xec,0x11,0xb9,0xbc,0xa4,0x5c,0x2a,0x0b};
+uint8_t acceleration_char_uuid_i[16] = {0x66,0x9a,0x0c,0x20,0x00,0x08,0x84,0xbf,0xec,0x11,0xb9,0xbc,0xa5,0x5c,0x2a,0x0b};
 
 //Sensor variables: pressure, temperature, humidity
 uint8_t raw_pressure[3];
@@ -109,19 +115,19 @@ int main(void) {
 	
 	/*Service definition: define the UUID, copy it in the required structure, add the service and obtain the handle.
 	  The handle is then used by the rest of the program.  */
-	uint8_t string_service_uuid[16] = {0x1b,0xc5,0xd5,0xa5,0x02,0xb4,0x9a,0xe1,0xe1,0x11,0x01,0x00,0x00,0x00,0x00,0x00};
 	Service_UUID_t service_uuid;
 	Osal_MemCpy(&service_uuid.Service_UUID_128, string_service_uuid, 16);
-	aci_gatt_add_service(UUID_TYPE_128, &service_uuid, PRIMARY_SERVICE, 8, &ServiceHandle);
+	aci_gatt_add_service(UUID_TYPE_128, &service_uuid, PRIMARY_SERVICE, 16, &ServiceHandle);
 	
 	/*Characteristic(s) definition*/
-	Char_UUID_t environment_char_uuid, accel_char_uuid, gyro_char_uuid;
+	Char_UUID_t environment_char_uuid, angular_char_uuid, acceleration_char_uuid;
 	Osal_MemCpy(&environment_char_uuid.Char_UUID_128, environment_char_uuid_i, 16);
-	Osal_MemCpy(&accel_char_uuid.Char_UUID_128, acceleration_char_uuid_i, 16);
-	Osal_MemCpy(&gyro_char_uuid.Char_UUID_128, gyroscope_char_uuid_i, 16);
-	aci_gatt_add_char(ServiceHandle, UUID_TYPE_128, &environment_char_uuid, 8, CHAR_PROP_READ, ATTR_PERMISSION_NONE, GATT_DONT_NOTIFY_EVENTS, 16, 0, &EnvironCharHandle);
-	aci_gatt_add_char(ServiceHandle, UUID_TYPE_128, &accel_char_uuid, 8, CHAR_PROP_READ, ATTR_PERMISSION_NONE, GATT_DONT_NOTIFY_EVENTS, 16, 0, &AccelCharHandle);
-	aci_gatt_add_char(ServiceHandle, UUID_TYPE_128, &gyro_char_uuid, 8, CHAR_PROP_READ, ATTR_PERMISSION_NONE, GATT_DONT_NOTIFY_EVENTS, 16, 0, &GyroCharHandle);
+	Osal_MemCpy(&angular_char_uuid.Char_UUID_128, angular_char_uuid_i, 16);
+	Osal_MemCpy(&acceleration_char_uuid.Char_UUID_128, acceleration_char_uuid_i, 16);
+
+	aci_gatt_add_char(ServiceHandle, UUID_TYPE_128, &environment_char_uuid, 176, CHAR_PROP_READ, ATTR_PERMISSION_NONE, GATT_DONT_NOTIFY_EVENTS, 16, 0, &EnvCharHandle);
+	aci_gatt_add_char(ServiceHandle, UUID_TYPE_128, &angular_char_uuid, 151, CHAR_PROP_READ, ATTR_PERMISSION_NONE, GATT_DONT_NOTIFY_EVENTS, 16, 0, &AngularCharHandle);
+	aci_gatt_add_char(ServiceHandle, UUID_TYPE_128, &acceleration_char_uuid, 151, CHAR_PROP_READ, ATTR_PERMISSION_NONE, GATT_DONT_NOTIFY_EVENTS, 16, 0, &AccelerationCharHandle);
 
 	/* Set device connectable (advertising) */
 	/*Choose the name*/
@@ -159,6 +165,7 @@ void hci_le_connection_complete_event(uint8_t Status, uint16_t Connection_Handle
 	SdkEvalLedOff(LED3);
 	
 	time_count = 0;
+	char_index = 0;
 	
 	HAL_VTimerStart_ms(0, 40); //Start the timer: 25 Hz. 
 	
@@ -170,6 +177,7 @@ void hci_disconnection_complete_event(uint8_t Status, uint16_t Connection_Handle
 	connection_established = 0;
 	time_count = 0;
 	HAL_VTimer_Stop(0);
+	char_index = 0;
 	
 	SdkEvalLedOff(LED1);
 	SdkEvalLedOff(LED2);
@@ -283,41 +291,46 @@ void HAL_VTimerTimeoutCallback(uint8_t timerNum) {
 	case 0:	// 25 Hz
 		//Restart the timer. 
 		HAL_VTimerStart_ms(0, 40);
+
+		//Add a timestamp to the first buffer slot. 
+		if(char_index == 0)	{
+			environment_buffer[0] = time_count;
+			angular_buffer[0] = time_count;
+			acceleration_buffer[0] = time_count;
+		}
 		
-		//A timestamp (sort of) is calculated. 
-		output_buffer[0] = time_count++;
-			
 		//Add Pressure (raw value from the sensor) to the buffer
 		lps22hh_pressure_raw_get(0, raw_pressure);
-		output_buffer[1] = raw_pressure[0];
-		output_buffer[2] = raw_pressure[1];
-		output_buffer[3] = raw_pressure[2];
+		environment_buffer[7*char_index + 1] = raw_pressure[0];
+		environment_buffer[7*char_index + 2] = raw_pressure[1];
+		environment_buffer[7*char_index + 3] = raw_pressure[2];
 			
 		//Add Humidity and Temperature values to the buffer, correctly shifted 
 		HTS221_Get_Measurement(0, &humidity, &temperature);
-		output_buffer[4] = humidity;
-		output_buffer[5] = humidity >> 8;
-		output_buffer[6] = temperature;
-		output_buffer[7] = temperature >> 8;
-		
-		//Publish Humidity + Temperature values.
-		aci_gatt_update_char_value(ServiceHandle, EnvironCharHandle, 0, 8, output_buffer);
+		environment_buffer[7*char_index + 4] = humidity;
+		environment_buffer[7*char_index + 5] = humidity >> 8;
+		environment_buffer[7*char_index + 6] = temperature;
+		environment_buffer[7*char_index + 7] = temperature >> 8;
 		
 		//Add accelerometer and gyroscope values to the buffer and publish values
 		lsm6dso_acceleration_raw_get(0, data_raw_acceleration);
 		lsm6dso_angular_rate_raw_get(0, data_raw_angular_rate);
 	  
 		for(int k=0; k<6; k++)
-			output_buffer[k] = data_raw_angular_rate[k];
-		output_buffer[6] = 0;
-		output_buffer[7] = 0;
-		aci_gatt_update_char_value(ServiceHandle, GyroCharHandle, 0, 8, output_buffer);
+			angular_buffer[6*char_index + k + 1] = data_raw_angular_rate[k];
 		
 		for(int k=0; k<6; k++)
-			output_buffer[k] = data_raw_acceleration[k];
-		output_buffer[6] = 0;
-		output_buffer[7] = 0;
-		aci_gatt_update_char_value(ServiceHandle, AccelCharHandle, 0, 8, output_buffer);		
+			acceleration_buffer[6*char_index + k + 1] = data_raw_acceleration[k];
+		
+		char_index++;
+		
+		if(char_index >= 25) {
+			char_index = 0;
+			time_count++;
+			aci_gatt_update_char_value(ServiceHandle, EnvCharHandle, 0, 176, environment_buffer);		
+			aci_gatt_update_char_value(ServiceHandle, AngularCharHandle, 0, 151, angular_buffer);	
+			aci_gatt_update_char_value(ServiceHandle, AccelerationCharHandle, 0, 151, acceleration_buffer);	
+		}
 		
 		break;
 
