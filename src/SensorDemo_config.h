@@ -30,7 +30,7 @@ These constants and variables are used from the BlueNRG-1,2 BLE stack to reserve
 #define NUM_APP_GATT_SERVICES	(1+1)
 
 /* Number of attributes requests from the SensorDemo demo plus 9 attributes required for OTA Service Characteristics */
-#define NUM_APP_GATT_ATTRIBUTES	(6+9)
+#define NUM_APP_GATT_ATTRIBUTES	(15+9)
 
 /* Set the number of 16-bytes units used on an OTA FW data packet for matching OTA client MAX ATT_MTU */
 #define OTA_16_BYTES_BLOCKS_NUMBER	((OTA_MAX_ATT_MTU_SIZE-4)/16)	/*4 bytes for OTA sequence numbers + needs ack + checksum bytes*/
@@ -45,7 +45,7 @@ These constants and variables are used from the BlueNRG-1,2 BLE stack to reserve
 #define NUM_APP_GATT_SERVICES	(1)
 
 /* Number of attributes requests from the SensorDemo demo */
-#define NUM_APP_GATT_ATTRIBUTES	(6)
+#define NUM_APP_GATT_ATTRIBUTES	(15)
 
 /* OTA characteristics maximum lenght */
 #define OTA_MAX_ATT_SIZE	(0)
@@ -56,14 +56,14 @@ These constants and variables are used from the BlueNRG-1,2 BLE stack to reserve
 #define MAX_CHAR_LEN(a,b) ((a) > (b) )? (a) : (b)
 
 /* Set supported max value for attribute size: it is the biggest attribute size enabled by the application. */
-#define SENSORDEMO_MAX_ATT_SIZE	(180)
+#define SENSORDEMO_MAX_ATT_SIZE	(150)
 #define APP_MAX_ATT_SIZE	  MAX_CHAR_LEN(OTA_MAX_ATT_SIZE,  SENSORDEMO_MAX_ATT_SIZE)
 
 /* Number of links needed for the SensorDemo demo: 1 */
 #define NUM_LINKS	(MIN_NUM_LINK)
 
 /* Max Number of Attribute Records that can be added for the services */
-#define MAX_NUMBER_ATTRIBUTE_SERVICE1	(7)
+#define MAX_NUMBER_ATTRIBUTE_SERVICE1	(16)
 
 
 /* Number of GATT attributes needed for the SensorDemo demo */
@@ -79,7 +79,7 @@ These constants and variables are used from the BlueNRG-1,2 BLE stack to reserve
 #define OTA_ATT_VALUE_ARRAY_SIZE	(0)	/*No OTA service is used*/
 #endif
 /* Array size for the attribute value */
-#define ATT_VALUE_ARRAY_SIZE	(650+OTA_ATT_VALUE_ARRAY_SIZE)
+#define ATT_VALUE_ARRAY_SIZE	(748+OTA_ATT_VALUE_ARRAY_SIZE)
 
 /* Set the size of Flash security database */
 #define FLASH_SEC_DB_SIZE	(0X400)
@@ -205,25 +205,37 @@ CONFIG_TABLE
 // Number of characteristics defined by the user application
 
 // Char property for Service 1
-#define NUMBER_CHAR_SERVICE_1	(3)
+#define NUMBER_CHAR_SERVICE_1	(5)
 
 #define UUID_TYPE_CHAR_1_1	(2)
-#define PROPERTY_CHAR_1_1	(0)
-#define VALUE_LEN_CHAR_1_1	(176)
+#define PROPERTY_CHAR_1_1	(128)
+#define VALUE_LEN_CHAR_1_1	(100)
 #define NUM_DESC_CHAR_1_1	(0)
 #define SIZE_DESC_CHAR_1_1	(0)
 
 #define UUID_TYPE_CHAR_1_2	(2)
-#define PROPERTY_CHAR_1_2	(0)
-#define VALUE_LEN_CHAR_1_2	(151)
+#define PROPERTY_CHAR_1_2	(128)
+#define VALUE_LEN_CHAR_1_2	(75)
 #define NUM_DESC_CHAR_1_2	(0)
 #define SIZE_DESC_CHAR_1_2	(0)
 
 #define UUID_TYPE_CHAR_1_3	(2)
-#define PROPERTY_CHAR_1_3	(0)
-#define VALUE_LEN_CHAR_1_3	(151)
+#define PROPERTY_CHAR_1_3	(128)
+#define VALUE_LEN_CHAR_1_3	(75)
 #define NUM_DESC_CHAR_1_3	(0)
 #define SIZE_DESC_CHAR_1_3	(0)
+
+#define UUID_TYPE_CHAR_1_4	(2)
+#define PROPERTY_CHAR_1_4	(128)
+#define VALUE_LEN_CHAR_1_4	(175)
+#define NUM_DESC_CHAR_1_4	(0)
+#define SIZE_DESC_CHAR_1_4	(0)
+
+#define UUID_TYPE_CHAR_1_5	(2)
+#define PROPERTY_CHAR_1_5	(128)
+#define VALUE_LEN_CHAR_1_5	(175)
+#define NUM_DESC_CHAR_1_5	(0)
+#define SIZE_DESC_CHAR_1_5	(0)
 
 */
 
