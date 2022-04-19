@@ -1,16 +1,14 @@
 # BlueTile_SensorValues
-Firmware for the ST BlueTile Evaluation Board that streams sensor values over Bluetooth, plus a Companion Python App for Linux to read them.
+Firmware for the ST BlueTile Evaluation Board that streams sensor values over Bluetooth, plus a Companion Python App for Linux to read them and save everything inside csv files.
 
 ## What does the Firmware do?
  1. Initialize the platform.
  3. Start Bluetooth, GAP and GATT framework. Define a personalized GATT service and a GATT characteristic to publish values on.
  4. Make the device visible and connectable.
- 5. In the main loop, raw data from the sensors is collected and published on the GATT characteristic. 
- 6. The GATT characteristic can be read from a smartphone (using an app like nRF Connect on Android), or can be read from the companion Linux app provided. 
+ 5. A timer in the BlueTile is set to poll the sensors every 0.04s. Every 1s, all samples are published over Bluetooth using GATT characteristics. 
+ 6. The GATT characteristic can be read from a smartphone (using an app like nRF Connect on Android), or can be read from the companion Linux app provided. The provided application can save all the sampled data inside a .csv file, ready to be transformed into graphs.  
 
 ## How to build, compile and get the firmware.
-The already compiled binary is available as .hex file inside the Compiled_Firmware folder. It can be flashed immediately with the ST RF-Flasher Utility as explained in point 7. If you want the full procedure, here it is:
-
 1. Get KEIL uVision for ST Microelectronics from https://www2.keil.com/stmicroelectronics-stm32/mdk and activate it as explained. 
 2. Install on KEIL the Software Pack for the BlueNRG-2.
 3. Get the Software Development Kit for the ST BlueTile from https://www.st.com/en/evaluation-tools/steval-bcn002v1b.html#tools-software
