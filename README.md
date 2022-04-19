@@ -24,7 +24,7 @@ Please refer to them to find all the necessary dependencies. To sum up:
 1. Make sure Python and BlueZ are installed in your system. 
 2. Install the library using the command `sudo pip install BLE_GATT`
 3. Launch the Linux app by issuing `python ReadValuesApp.py`
-4. It will launch, read one time the values and then return.
+4. It will launch, ask you how many seconds you want to sample, create the csv file and then return.
 5. Maybe you need to modify the bluetooth address for it to work correctly. 
 
 ## Tips for working with the BlueTile
