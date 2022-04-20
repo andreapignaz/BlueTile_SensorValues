@@ -1,6 +1,10 @@
 # BlueTile_SensorValues
 Firmware for the ST BlueTile Evaluation Board that streams sensor values over Bluetooth, plus a Companion Python App for Linux to read them and save everything inside csv files.
 
+<p align="center">
+  <img src="UseExample.png" alt="Example Screenshot" width=60%/>
+</p>
+
 ## What does the Firmware do?
  1. Initialize the platform.
  3. Start Bluetooth, GAP and GATT framework. Define a personalized GATT service and a GATT characteristic to publish values on.
