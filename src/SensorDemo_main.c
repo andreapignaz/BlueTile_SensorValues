@@ -125,9 +125,9 @@ int main(void) {
 	Osal_MemCpy(&angular_char_uuid.Char_UUID_128, angular_char_uuid_i, 16);
 	Osal_MemCpy(&acceleration_char_uuid.Char_UUID_128, acceleration_char_uuid_i, 16);
 
-	aci_gatt_add_char(ServiceHandle, UUID_TYPE_128, &environment_char_uuid, 176, CHAR_PROP_READ, ATTR_PERMISSION_NONE, GATT_DONT_NOTIFY_EVENTS, 16, 0, &EnvCharHandle);
-	aci_gatt_add_char(ServiceHandle, UUID_TYPE_128, &angular_char_uuid, 151, CHAR_PROP_READ, ATTR_PERMISSION_NONE, GATT_DONT_NOTIFY_EVENTS, 16, 0, &AngularCharHandle);
-	aci_gatt_add_char(ServiceHandle, UUID_TYPE_128, &acceleration_char_uuid, 151, CHAR_PROP_READ, ATTR_PERMISSION_NONE, GATT_DONT_NOTIFY_EVENTS, 16, 0, &AccelerationCharHandle);
+	aci_gatt_add_char(ServiceHandle, UUID_TYPE_128, &environment_char_uuid, 176, CHAR_PROP_READ | CHAR_PROP_NOTIFY, ATTR_PERMISSION_NONE, GATT_DONT_NOTIFY_EVENTS, 16, 0, &EnvCharHandle);
+	aci_gatt_add_char(ServiceHandle, UUID_TYPE_128, &angular_char_uuid, 151, CHAR_PROP_READ | CHAR_PROP_NOTIFY, ATTR_PERMISSION_NONE, GATT_DONT_NOTIFY_EVENTS, 16, 0, &AngularCharHandle);
+	aci_gatt_add_char(ServiceHandle, UUID_TYPE_128, &acceleration_char_uuid, 151, CHAR_PROP_READ | CHAR_PROP_NOTIFY, ATTR_PERMISSION_NONE, GATT_DONT_NOTIFY_EVENTS, 16, 0, &AccelerationCharHandle);
 
 	/* Set device connectable (advertising) */
 	/*Choose the name*/
